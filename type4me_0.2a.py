@@ -4,10 +4,16 @@
 
 #NOTES:
 '''
+Build command: pyinstaller type4me.spec
+
 Special ascii characters
 ■
 ⬤
 
+bugs@bloq.me
+
+Grid tutorial:
+https://riptutorial.com/tkinter/example/29713/grid--#:~:text=tkinter%20Tkinter%20Geometry%20Managers%20grid()&text=The%20grid()%20geometry%20manager,%2C%20row%20%2C%20rowspan%20and%20sticky%20.
 '''
 
 #UI NOTES:
@@ -99,7 +105,8 @@ V0.2a Features
 - Add json config file to save settings - Done ✅ 07-03-2022
 
 Future Features:
-- Dark mode, pretty self explanitary
+- Error handling
+- Dark mode
 - Log file, hashed entries and log file purge button in config window
 - VMWare mode, specialised for entering into Virtual machines opened in browser window.
 - Character delay, user defined time delay between each character
@@ -108,7 +115,6 @@ Future Features:
 - Install and uninstall?
 - Windows App Certification?
 - Refactor Entire project
-- Error handling
 '''
 
 #TO DO
@@ -117,6 +123,7 @@ Future Features:
 - Index selection in listbox needs to be limited to range of listbox. - Done ✅ 07-03-2022
 - Icon is not part of exe after build - Done ✅ 12-03-2022
 - Cant save config if about window isnt open - Done ✅ 12-03-2022
+- software is not reading config file created. - Done ✅ 19-07-2022
 
 #### QOL FIXES ####
 - Clean up toolbar on windows version, showing lines as first item - Done ✅ 07-03-2022
@@ -130,7 +137,7 @@ Future Features:
 - Wide mode - Done ✅ 12-03-2022
 '''
 
-import tkinter, tkinter.ttk, webbrowser, json, base64, os.path
+import tkinter, tkinter.ttk, webbrowser, json, base64, os
 from pynput import keyboard as pk
 from PIL import ImageTk, Image
 
@@ -148,6 +155,9 @@ end = False
 about_open = False
 config_open = False
 k = pk.Controller()
+path = os.getcwd()
+config_file = path + "\\t4m_config.json"
+print(config_file)
 
 icon_file = "icon.ico" 
 if not hasattr(os.sys, "frozen"):
@@ -200,31 +210,8 @@ def decrpyt(key):
     
     return data
 
-def readConfigFile():
-    global delay_time, user_defined_keybind, clip_toggle_value,  previous_input
-    config_file = (os.path.dirname(os.path.abspath(__file__))) + '\\t4m_config.json'
-    if os.path.isfile(config_file) == False:
-        all_settings = {
-            'version': appName + ' - ' + appVersion,
-            'delay_time': delay_time,
-            'key_binding': trigger(),
-            'always_ontop': onTop_value.get(),
-            'auto_clipboard':clip_toggle_value.get(),
-            'previous_inputs':''
-        }
-        with open('t4m_config.json', 'w') as outfile:
-            json.dump(all_settings, outfile)
-
-    with open('t4m_config.json') as read_file:
-        json_data = json.load(read_file)
-    delay_time = json_data['delay_time']
-    user_defined_keybind = json_data['key_binding']
-    clip_toggle_value.set(json_data['auto_clipboard'])
-    onTop_value.set(json_data['always_ontop'])
-    for data in json_data['previous_inputs']:
-        previous_input.insert(json_data['previous_inputs'].index(data), decrpyt(data))
-
 def writeToConfigFile():
+    global config_file
     all_settings = {
         'version': appName + ' - ' + appVersion,
         'delay_time': delay_time,
@@ -233,9 +220,38 @@ def writeToConfigFile():
         'auto_clipboard':clip_toggle_value.get()
     }
     all_settings['previous_inputs'] = encrpyt()
-    with open('t4m_config.json', 'w') as outfile:
+    #print('Saving settings to config file')
+    with open(config_file, 'w+') as outfile:
         json.dump(all_settings, outfile)
+
+def readConfigFile():
+    global delay_time, user_defined_keybind, clip_toggle_value, previous_input, config_file
     
+    if os.path.isfile(config_file) == False:
+        #print('No config file found')
+        writeToConfigFile()
+        """all_settings = {
+            'version': appName + ' - ' + appVersion,
+            'delay_time': delay_time,
+            'key_binding': trigger(),
+            'always_ontop': onTop_value.get(),
+            'auto_clipboard':clip_toggle_value.get(),
+            'previous_inputs':''
+        }"""
+
+    else:
+        #print('Config file found')
+        with open(config_file) as read_file:
+            json_data = json.load(read_file)
+        
+        delay_time = json_data['delay_time']
+        user_defined_keybind = json_data['key_binding']
+        clip_toggle_value.set(json_data['auto_clipboard'])
+        onTop_value.set(json_data['always_ontop'])
+        
+        for data in json_data['previous_inputs']:
+            previous_input.insert(json_data['previous_inputs'].index(data), decrpyt(data))
+
 def typeIt():
     global k, list_selection
     my_string = main_input.get()
@@ -454,7 +470,7 @@ def wideMode():
 
 #DONO PAGE
 def openDonationPage():
-    webbrowser.open('https://www.paypal.com/donate/?business=5YX7ZYMNDJDZJ&no_recurring=1&item_name=%0A----------+Starving+gamer+needs+a+RTX+3070+Ti+----------&currency_code=AUD', new=1)
+    webbrowser.open('https://www.paypal.com/donate/?business=5YX7ZYMNDJDZJ&no_recurring=1&item_name=%0A----------+Starving+gamer+needs+more+games+----------&currency_code=AUD', new=1)
 
 #ABOUT WINDOW
 def openAboutWindow():
@@ -565,6 +581,7 @@ previous_input_clear.pack(fill=tk.BOTH)
 
 #Works on windows, not on mac.
 main_window.after(0, startKeyListener)
+
 readConfigFile()
 main_window.attributes('-topmost', stayOnTop())
 main_window.mainloop()
